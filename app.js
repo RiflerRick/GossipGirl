@@ -7,6 +7,7 @@ ejs used as the templating engine
 var express=require('express')
 var io=require('socket.io')
 var chalk=require('chalk')
+var path=require('path')
 
 var app=express()
 var server=app.listen(4000)
@@ -16,6 +17,13 @@ io.listen(server);
 
 //setting the view engine, in this case embedded javascript or ejs
 app.set('view engine', 'ejs')
+
+/*
+This middleware is simply going to be code executed between the request and response life-cycle of your application
+Any static file is assumed to be living in your public directory.
+*/ 
+//middleware
+app.use(express.static(path.join(__dirname, 'public')))
 
 //just logging that the server has started
 console.log(chalk.blue('Server started!!!'))
@@ -35,3 +43,8 @@ app.get('/userHome', function (req, res){
 app.get('/userSuccess', function(req, res){
     res.render('userSuccess')
 })
+
+app.get('/adminHome', function(req, res){
+    res.render('adminHome')
+})
+
