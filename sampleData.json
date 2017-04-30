@@ -1,0 +1,22 @@
+[{
+    "characterName":"Serena",
+    "location":"detroit",
+    "relationship":"single",
+    "job":"receptionist",
+    "assignment":"none"
+},
+{
+    "characterName":"Blair",
+    "location":"washington",
+    "relationship":"married",
+    "job":"manager",
+    "assignment":"none"
+},
+{
+    "characterName":"Nate",
+    "location":"new york",
+    "relationship":"married",
+    "job":"teacher",
+    "assignment":"carry a letter of apology to Blair for not being able to attend her marriage"
+}
+]
