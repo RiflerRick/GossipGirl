@@ -31,3 +31,7 @@ app.get('/admin', function(req, res){
 app.get('/userHome', function (req, res){
     res.render('userHome')
 })
+
+app.get('/userSuccess', function(req, res){
+    res.render('userSuccess')
+})
