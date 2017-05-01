@@ -2,5 +2,6 @@
     "host":"127.0.0.1",
     "mongoDBPort":27017,
     "databaseName":"GossipGirl",
-    "GSCollection":"GSCharacterLog"
+    "GSCollection":"GSCharacterLog",
+    "userCollection":"users"
 }

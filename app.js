@@ -37,6 +37,8 @@ app.get('/admin', function(req, res){
 });
 
 app.get('/userHome', function (req, res){
+    var email=req.email
+    
     res.render('userHome')
 })
 
