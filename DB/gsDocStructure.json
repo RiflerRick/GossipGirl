@@ -1,7 +1,7 @@
 {
-    "character name":"characterName",
-    "location":"location",
-    "relationships":"relationships",
-    "job":"job",
-    "assignment":"assignment"
+    "character_name":"NULL",
+    "location":"NULL",
+    "relationships":"NULL",
+    "job":"NULL",
+    "assignment":"NULL"
 }
