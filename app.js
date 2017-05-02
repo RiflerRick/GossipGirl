@@ -5,7 +5,6 @@ chalk used for simple styling of console outputs.
 ejs used as the templating engine
 */
 var express=require('express')
-var io=require('socket.io')
 var sha256=require('crypto-js/sha256')
 var jsonfile=require('jsonfile')
 var chalk=require('chalk')
@@ -28,6 +27,11 @@ var userCollection=obj.userCollection
 
 var app=express()
 var server=null
+
+//------------------------------------configuring  sockets-----------------------------
+var http     = require('http');
+var server   = http.createServer(app);
+var io       = require('socket.io').listen(server);
 
 
 //setting the view engine, in this case embedded javascript or ejs
@@ -97,8 +101,6 @@ MongoClient.connect(url, function(err, db){
     })
     //below is a key line as this ensures that the server starts only after the connection to the database is made
     server=app.listen(4000)
-    // socket io also listening to that same server
-    io.listen(server);
     //just logging that the server has started
     console.log(chalk.blue('Server started!!!'))
     console.log(chalk.blue('listening to port 4000, express and socket initialized'))
@@ -137,7 +139,19 @@ app.get('/userHome/:email', function (req, res){
     
 })
 
-app.get('/userSuccess', function(req, res){
+app.get('/userSuccess/:email/:characterName/:location/:relationships/:job/:assignments', function(req, res){
+
+    var email=req.params.email
+
+    var data={
+    character_name:req.params.characterName,
+    location:req.params.location,
+    relationships:req.params.relationships,
+    job:req.params.job,
+    assignment:req.params.assignments
+    }
+
+    db.insert.insertCharacterSubscriptions(dbInstance, email, data)
     res.render('userSuccess')
 })
 
@@ -172,4 +186,12 @@ app.get('/adminSuccess/:characterName/:location/:relationship/:job/:assignment',
     }
     db.insert.insertGSData(dbInstance, data)
     res.render('adminHome')
+})
+
+
+io.sockets.on('connection', function(client){
+    //newData is the event or the message that the client sends to get a response
+    client.on('newData', function(data){//data here is the data it is getting
+        //TODO
+    })
 })
