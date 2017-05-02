@@ -11,6 +11,7 @@ var jsonfile=require('jsonfile')
 var chalk=require('chalk')
 var path=require('path')
 var file='config.json'
+var async=require('async')
 var bodyParser = require('body-parser')//body-parser to actually use get stuff from post
 
 var db=require('DB/DbOps.js')
@@ -28,11 +29,13 @@ var userCollection=obj.userCollection
 var app=express()
 var server=null
 
-// socket io also listening to that same server
-io.listen(server);
 
 //setting the view engine, in this case embedded javascript or ejs
 app.set('view engine', 'ejs')
+var jsonParser = bodyParser.json()
+ 
+// create application/x-www-form-urlencoded parser 
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 /*
 This middleware is simply going to be code executed between the request and response life-cycle of your application
@@ -40,15 +43,6 @@ Any static file is assumed to be living in your public directory.
 */ 
 //middleware
 app.use(express.static(path.join(__dirname, 'public')))
-app.use( bodyParser.json() );       // to support JSON-encoded bodies
-app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
-  extended: true
-})); 
-app.use(express.json());       // to support JSON-encoded bodies
-app.use(express.urlencoded()); // to support URL-encoded bodies
-
-//just logging that the server has started
-console.log(chalk.blue('Server started!!!'))
 
 //read json file for password
 var passFile=jsonfile.readFileSync('adminKey.json')
@@ -103,7 +97,11 @@ MongoClient.connect(url, function(err, db){
     })
     //below is a key line as this ensures that the server starts only after the connection to the database is made
     server=app.listen(4000)
-    console.log(chalk.blue('listening to port 4000'))
+    // socket io also listening to that same server
+    io.listen(server);
+    //just logging that the server has started
+    console.log(chalk.blue('Server started!!!'))
+    console.log(chalk.blue('listening to port 4000, express and socket initialized'))
 })
 
 //------------------------------------------connect to database done----------------------------------------------
@@ -118,32 +116,47 @@ app.get('/admin', function(req, res){
 
 app.get('/userHome/:email', function (req, res){
     var email=req.params.email
-    var userExists=db.read.userExists(dbInstance, email)
-    if(userExists==1)
+    var userExists
+    async.series([function(callback){
+        //userExists=
+        db.read.userExists(dbInstance, email, callback)
+    }
+    ], function(err, result){
+        if(result[0]==1)
         {
             //you do not have to create a user
             console.log(chalk.green('user exists'))
         }
-    else
-    {
-        db.insert.insertUser(dbInstance, email)
-    }
-    res.render('userHome')
+        else
+        {
+            console.log(chalk.red('user does not exist'))
+            db.insert.insertUser(dbInstance, email)
+        }
+        res.render('userHome')
+    })
+    
 })
 
 app.get('/userSuccess', function(req, res){
     res.render('userSuccess')
 })
 
-app.post('/adminHome', function(req, res){
+
+app.post('/adminHome', urlencodedParser, function(req, res){
+    if (!req.body)
+        return res.sendStatus(400)
     var password=req.body.password
     var key=sha256(password)
-    if (key==passFile.secret_key)
+    var secret_key=JSON.stringify(passFile.secret_key)
+    var password=JSON.stringify(key)
+    if (secret_key==password)
     {
+        console.log('matched')
         res.render('adminHome')
     }
     else
     {
+        console.log(chalk.red('not matched'))
         res.render('adminAccessDenied')
     }
 })
@@ -157,6 +170,6 @@ app.get('/adminSuccess/:characterName/:location/:relationship/:job/:assignment',
         job:req.params.job,
         assignment:req.params.assignment
     }
-    db.insert.insertGSData(dbInstance, sdata)
+    db.insert.insertGSData(dbInstance, data)
     res.render('adminHome')
 })
