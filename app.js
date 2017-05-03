@@ -15,6 +15,8 @@ var file='config.json'
 var async=require('async')
 var bodyParser = require('body-parser')//body-parser to actually use get stuff from post
 
+var emailSession=[]//an array of all logged in users' emails. mind you we are not using standard session objects to keep the application simple.
+
 var db=require('DB/DbOps.js')
 db.connectToDB //connects to the database required
 
@@ -129,6 +131,14 @@ app.get('/admin', function(req, res){
     res.render('admin')
 });
 
+app.get('/logout/:email', function(req, res){
+    var email=req.params.email
+    var i=emailSession.indexOf(email)
+    emailSession.splice(i,1)//splice removes an element from location i and removes 1 element denoted by the second arguement
+    console.log(JSON.stringify(emailSession))
+    res.render('index')
+})
+
 app.get('/userHome/:email', function (req, res){
     var email=req.params.email
     var userExists
@@ -147,6 +157,9 @@ app.get('/userHome/:email', function (req, res){
             console.log(chalk.red('user does not exist'))
             db.insert.insertUser(dbInstance, email)
         }
+        
+        emailSession.push(email)//make sure email is saved
+        console.log(JSON.stringify(emailSession))
         res.render('userHome')
     })
     
