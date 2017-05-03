@@ -5,6 +5,8 @@ chalk used for simple styling of console outputs.
 ejs used as the templating engine
 */
 var express=require('express')
+var io=require('socket.io')
+var http=require('http')
 var sha256=require('crypto-js/sha256')
 var jsonfile=require('jsonfile')
 var chalk=require('chalk')
@@ -27,12 +29,6 @@ var userCollection=obj.userCollection
 
 var app=express()
 var server=null
-
-//------------------------------------configuring  sockets-----------------------------
-var http     = require('http');
-var server   = http.createServer(app);
-var io       = require('socket.io').listen(server);
-
 
 //setting the view engine, in this case embedded javascript or ejs
 app.set('view engine', 'ejs')
@@ -61,6 +57,7 @@ var ObjectID = require('mongodb').ObjectID
 var url = 'mongodb://'+host+':'+port+'/'+databaseName
 
 //--------------------------------------------connect to database----------------------------------------
+async.series([function(callback){
 MongoClient.connect(url, function(err, db){
     if(err)
     {
@@ -101,10 +98,26 @@ MongoClient.connect(url, function(err, db){
     })
     //below is a key line as this ensures that the server starts only after the connection to the database is made
     server=app.listen(4000)
-    //just logging that the server has started
-    console.log(chalk.blue('Server started!!!'))
-    console.log(chalk.blue('listening to port 4000, express and socket initialized'))
+    //configuring the socket
+    var httpServer=http.createServer()
+    httpServer.listen(1337)
+    console.log(chalk.blue('http server started and listening at port 1337'))
+    io=io.listen(httpServer)
+    console.log(chalk.blue('express Server started, socket initialized!!!'))
+    callback(null)
 })
+}
+
+], function(err, results){
+  io.sockets.on('connection', function(client){
+      console.log('socket started')
+    //newData is the event or the message that the client sends to get a response
+    client.on('newData', function(data){//data here is the data it is getting, newData is the message sent by the client for the server to capture.
+        console.log('data: '+JSON.stringify(data))
+    })
+})  
+})
+
 
 //------------------------------------------connect to database done----------------------------------------------
 
@@ -175,23 +188,27 @@ app.post('/adminHome', urlencodedParser, function(req, res){
     }
 })
 
-app.get('/adminSuccess/:characterName/:location/:relationship/:job/:assignment', function(req, res){
+app.post('/adminSuccess', urlencodedParser, function(req, res){
     //according to express documentation route paths can be configured this way to get route parameters
+    if (!req.body)
+        return res.sendStatus(400)
     var data={
-        characterName:req.params.characterName,
-        location:req.params.location,
-        relationship:req.params.relationship,
-        job:req.params.job,
-        assignment:req.params.assignment
+        character_name:req.body.characterName,
+        location:req.body.location,
+        relationships:req.body.relationship,
+        job:req.body.job,
+        assignment:req.body.assignment
     }
+
+    console.log('data for adminSuccess:'+JSON.stringify(data))
+
     db.insert.insertGSData(dbInstance, data)
     res.render('adminHome')
 })
-
-
+/*
 io.sockets.on('connection', function(client){
     //newData is the event or the message that the client sends to get a response
     client.on('newData', function(data){//data here is the data it is getting
-        //TODO
+        console.log('data:'+data)
     })
-})
+})*/
