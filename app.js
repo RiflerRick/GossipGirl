@@ -5,6 +5,7 @@ chalk used for simple styling of console outputs.
 ejs used as the templating engine
 */
 var express=require('express')
+var session=require('express-session')
 var io=require('socket.io')
 var http=require('http')
 var sha256=require('crypto-js/sha256')
@@ -45,6 +46,19 @@ Any static file is assumed to be living in your public directory.
 */ 
 //middleware
 app.use(express.static(path.join(__dirname, 'public')))
+var sessionSecret=(jsonfile.readFileSync('sessionSecret.json')).secret
+app.use(session({
+  cookieName:'session',
+  secret:sessionSecret,
+  duration:30*60*1000,
+  activeDuration:5*60*1000
+}));
+
+//method to start a session
+function startSession(req,email)
+{
+  req.session.email=email;
+}
 
 //read json file for password
 var passFile=jsonfile.readFileSync('adminKey.json')
@@ -115,7 +129,19 @@ MongoClient.connect(url, function(err, db){
       console.log('socket started')
     //newData is the event or the message that the client sends to get a response
     client.on('newData', function(data){//data here is the data it is getting, newData is the message sent by the client for the server to capture.
-        console.log('data: '+JSON.stringify(data))
+        var data=data.data
+        console.log(chalk.blue('data sent from socket: '+JSON.stringify(data)))
+        /*
+        data to be sent in the following form:
+        data.characterName, data.location, data.relationship, data.job, data.assignment
+        */  
+        async.series([function(callback){
+            db.read.checkUserSubscription(dbInstance, data, callback)
+            
+            
+        }], function(err, results){
+            console.log(chalk.green('userEmails: '+JSON.stringify(results[0])))
+        })
     })
 })  
 })
@@ -124,6 +150,11 @@ MongoClient.connect(url, function(err, db){
 //------------------------------------------connect to database done----------------------------------------------
 
 app.get('/', function(req, res){
+    if (req.session && req.session.email){
+        req.session.destroy(function(err){
+            console.log(chalk.red('session destroyed'))
+        })
+    }
     res.render('index')
 });
 
@@ -131,19 +162,30 @@ app.get('/admin', function(req, res){
     res.render('admin')
 });
 
-app.get('/logout/:email', function(req, res){
-    var email=req.params.email
+app.get('/logout', function(req, res){
+    /*var email=req.params.email
     var i=emailSession.indexOf(email)
     emailSession.splice(i,1)//splice removes an element from location i and removes 1 element denoted by the second arguement
-    console.log(JSON.stringify(emailSession))
+    console.log(JSON.stringify(emailSession))*/
+    if(req.session && req.session.email){
+        req.session.destroy(function(err){
+            console.log(chalk.red('session destroyed'))
+        })
+    }
     res.render('index')
 })
 
 app.get('/userHome/:email', function (req, res){
     var email=req.params.email
     var userExists
+
+    if(!(req.session && req.session.email)){
+        console.log(chalk.red('starting session'))
+        startSession(req, email)
+    }
+
     async.series([function(callback){
-        //userExists=
+
         db.read.userExists(dbInstance, email, callback)
     }
     ], function(err, result){
@@ -157,28 +199,36 @@ app.get('/userHome/:email', function (req, res){
             console.log(chalk.red('user does not exist'))
             db.insert.insertUser(dbInstance, email)
         }
-        
-        emailSession.push(email)//make sure email is saved
-        console.log(JSON.stringify(emailSession))
+        /*if(emailSession.indexOf(email)==-1)//only if the email does not already exist
+            emailSession.push(email)//make sure email is saved
+        console.log(JSON.stringify(emailSession))*/
         res.render('userHome')
     })
     
 })
 
-app.get('/userSuccess/:email/:characterName/:location/:relationships/:job/:assignments', function(req, res){
+app.get('/userSuccess/:characterName/:location/:relationships/:job/:assignment', function(req, res){
 
-    var email=req.params.email
+    /*var email=req.params.email*/
+    if(req.session && req.session.email){
+            console.log(chalk.green('session exists'))
+            
+            var email=req.session.email
+    
+            var data={
+            characterName:req.params.characterName,
+            location:req.params.location,
+            relationships:req.params.relationships,
+            job:req.params.job,
+            assignment:req.params.assignment
+            }
 
-    var data={
-    character_name:req.params.characterName,
-    location:req.params.location,
-    relationships:req.params.relationships,
-    job:req.params.job,
-    assignment:req.params.assignments
+            db.insert.insertCharacterSubscriptions(dbInstance, email, data)
+            res.render('userSuccess')
     }
-
-    db.insert.insertCharacterSubscriptions(dbInstance, email, data)
-    res.render('userSuccess')
+    else{
+        res.render('/')
+    }
 })
 
 
@@ -218,10 +268,3 @@ app.post('/adminSuccess', urlencodedParser, function(req, res){
     db.insert.insertGSData(dbInstance, data)
     res.render('adminHome')
 })
-/*
-io.sockets.on('connection', function(client){
-    //newData is the event or the message that the client sends to get a response
-    client.on('newData', function(data){//data here is the data it is getting
-        console.log('data:'+data)
-    })
-})*/
