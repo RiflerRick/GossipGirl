@@ -1,8 +1,9 @@
 $(document).ready(function(){
+
+    $('form').attr('action','/userHome')
+    $('form').attr('method', 'post')
+
     $('#loginButton').click(function(){
-        var email=$('#email').val()
-        
-        var route='/userHome/'+email
-        window.location.assign(route)
+        $('form').submit()
     })
 })  

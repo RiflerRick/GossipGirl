@@ -14,4 +14,29 @@ $(document).ready(function(){
         var route='/userSuccess'+'/'+characterName +'/'+ location+'/'+relationships+'/'+job+'/'+assignments
         window.location.assign(route)
     })
+
+    //socket configuration
+
+    var socketRoute=window.location.hostname+':'+window.location.port
+    var socket=io.connect(socketRoute)/*
+    socket.on('hey', function(data){
+        alert('hey')
+    })*/
+    socket.on('newDataLog', function(data){
+        alert('data now:'+data.data)
+        if($('#noNotification')){
+            $('noNotification').remove()
+        }
+        var name='<p><strong>Character:</strong>'+data.characterName+'</p><br>'
+        var location='<p><strong>Whereabouts</strong>'+data.location+'</p><br>'
+        var relationship='<p><strong>Relationships</strong>'+data.relationships+'</p><br>'
+        var job='<p><strong>Job</strong>'+data.job+'</p><br>'
+        var assignments='<p><strong>Assignments</strong>'+data.assignment+'</p><br>'
+        var body='<p>'+name+location+relationship+job+assignments+'</p>'
+        var element='<div class="card"><div class="card-content"><span class="card-title"> Notification </span>'+
+        body+'</div></div>'
+        $('#notificationContainer').append(element)
+
+    })
+
 })

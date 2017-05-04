@@ -4,11 +4,15 @@
     <body>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <!--socket.io is not a real directory it is a path configured by the socket.io lib-->
     <script type="text/javascript" src="/js/userHome.js"></script>
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script>
 
-        <div align="center" style= "width:50%;">
+        <div class="row">
+            <div class="col s6 offset-s3">
+               <div align="center">
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">Choose your character</span>
@@ -73,9 +77,20 @@
                 </div>
                 
             </div>
+               </div>
+            </div>
         </div>
-        <div align="right">
+        <div class="row">
+            <div class="col s6 offset-s3">
+            <div id="notificationContainer" align="center">
+                    <div id="noNotification" class="card">
+                        <div class="card-content">
+                        <span class="card-title">No notifications yet</span>
+                        </div>
+                    </div>
             
+            </div>
+            </div>
         </div>
 
 

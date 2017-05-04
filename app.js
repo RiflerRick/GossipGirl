@@ -16,7 +16,7 @@ var file='config.json'
 var async=require('async')
 var bodyParser = require('body-parser')//body-parser to actually use get stuff from post
 
-var emailSession=[]//an array of all logged in users' emails. mind you we are not using standard session objects to keep the application simple.
+var users={}//to maintain socket instances for users
 
 var db=require('DB/DbOps.js')
 db.connectToDB //connects to the database required
@@ -31,6 +31,7 @@ var userCollection=obj.userCollection
 //--------------------------------------database config file read over------------------------
 
 var app=express()
+var userSocket=null
 var server=null
 
 //setting the view engine, in this case embedded javascript or ejs
@@ -121,16 +122,22 @@ MongoClient.connect(url, function(err, db){
     io=io.listen(httpServer)
     console.log(chalk.blue('express Server started, socket initialized!!!'))
     callback(null)
+
 })
 }
 
 ], function(err, results){
-  io.sockets.on('connection', function(client){
+
+    //--------------------------------------------Socket for sending data to clients--------------------------------
+    userSocket=require('socket.io').listen(server)//configuring to listen for connections into the same port of express
+    
+    //--------------------------------------------Socket connection for com. between server and tailableCursor client------
+
+    io.sockets.on('connection', function(client){
       console.log('socket started')
     //newData is the event or the message that the client sends to get a response
     client.on('newData', function(data){//data here is the data it is getting, newData is the message sent by the client for the server to capture.
         var data=data.data
-        console.log(chalk.blue('data sent from socket: '+JSON.stringify(data)))
         /*
         data to be sent in the following form:
         data.characterName, data.location, data.relationship, data.job, data.assignment
@@ -140,7 +147,7 @@ MongoClient.connect(url, function(err, db){
             
             
         }], function(err, results){
-            console.log(chalk.green('userEmails: '+JSON.stringify(results[0])))
+            sendLog(results[0], data)
         })
     })
 })  
@@ -151,11 +158,11 @@ MongoClient.connect(url, function(err, db){
 
 app.get('/', function(req, res){
     if (req.session && req.session.email){
-        req.session.destroy(function(err){
-            console.log(chalk.red('session destroyed'))
-        })
+        res.render('userHome')
     }
-    res.render('index')
+    else{
+        res.render('index') 
+    }
 });
 
 app.get('/admin', function(req, res){
@@ -163,10 +170,6 @@ app.get('/admin', function(req, res){
 });
 
 app.get('/logout', function(req, res){
-    /*var email=req.params.email
-    var i=emailSession.indexOf(email)
-    emailSession.splice(i,1)//splice removes an element from location i and removes 1 element denoted by the second arguement
-    console.log(JSON.stringify(emailSession))*/
     if(req.session && req.session.email){
         req.session.destroy(function(err){
             console.log(chalk.red('session destroyed'))
@@ -175,34 +178,50 @@ app.get('/logout', function(req, res){
     res.render('index')
 })
 
-app.get('/userHome/:email', function (req, res){
-    var email=req.params.email
-    var userExists
-
-    if(!(req.session && req.session.email)){
-        console.log(chalk.red('starting session'))
-        startSession(req, email)
-    }
+app.post('/userHome', urlencodedParser, function (req, res){
+    var email=req.body.email
 
     async.series([function(callback){
+
+        if(!(req.session && req.session.email)){
+            console.log(chalk.green('starting session'))
+            startSession(req, email)
+        }
+        callback(null)
+
+    },function(callback){
 
         db.read.userExists(dbInstance, email, callback)
     }
     ], function(err, result){
-        if(result[0]==1)
-        {
+
+        if(result[1]==1){
             //you do not have to create a user
             console.log(chalk.green('user exists'))
         }
-        else
-        {
+        else{
             console.log(chalk.red('user does not exist'))
             db.insert.insertUser(dbInstance, email)
         }
-        /*if(emailSession.indexOf(email)==-1)//only if the email does not already exist
-            emailSession.push(email)//make sure email is saved
-        console.log(JSON.stringify(emailSession))*/
         res.render('userHome')
+
+        userSocket.on('connection', function(client){
+            var currentEmails=Object.keys(users)
+            console.log('email now:'+req.session.email)
+            console.log('email inserted already: '+currentEmails)
+            if(currentEmails.indexOf(req.session.email)==-1){                
+                var email=req.session.email
+                users[email]=client.id
+                /*client.emit('hey', {data:'hey'})*/
+                console.log('user emails now:'+Object.keys(users))
+            }
+            
+        })
+
+        userSocket.on('disconnect', function(client){
+            console.log('a client got disconnected')
+        })
+        
     })
     
 })
@@ -268,3 +287,21 @@ app.post('/adminSuccess', urlencodedParser, function(req, res){
     db.insert.insertGSData(dbInstance, data)
     res.render('adminHome')
 })
+
+function sendLog(message, data){
+    console.log('at sendLog')
+    console.log('emails now:'+Object.keys(users))
+    console.log('message now:'+message)
+    console.log(JSON.stringify(users))
+    if(userSocket==null){
+        console.log('userSocket is null')
+    }
+    for(var email in users){
+        console.log('email insie for loop:'+email)
+        if(message.indexOf(email)!=-1){
+            console.log(chalk.red('emitting data to the user:'+JSON.stringify(data)))
+            userSocket.sockets.connected[users.email].emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
+        }
+    }
+}
+
