@@ -311,18 +311,6 @@ userSocket.sockets.on('connection', function(client){
 
     client.join(userEmail)
 
-    /*if(currentEmails.indexOf(req.session.email)==-1){                   console.log('client joins room:'+req.session.email+'with client id: '+client.id)
-        client.join(req.session.email)//here we are using rooms and the name of the room the client join is its email
-        var email=req.session.email
-        users[email]=client.id
-    }
-    else{//if the user exists override the client id so that the new client id is stored
-        console.log('on reconnection client joins room:'+req.session.email+'with client id: '+client.id)
-        client.join(req.session.email)
-        email=req.session.email
-        users[email]=client.id
-    }*/
-
     client.on('disconnect', function(){
         console.log(chalk.red('a client got disconnected'))
     })
@@ -337,7 +325,7 @@ function sendLog(message, data){
     }
     var i=0
     for(i=0; i<message.length;i++){
-        console.log('emiting now to email:'+message[i])
+        console.log(chalk.blue('emiting now to email:'+message[i]))
         userSocket.in(message[i]).emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
     }
 }
