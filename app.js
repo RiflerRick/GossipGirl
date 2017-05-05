@@ -16,7 +16,7 @@ var file='config.json'
 var async=require('async')
 var bodyParser = require('body-parser')//body-parser to actually use get stuff from post
 
-var users={}//to maintain socket instances for users
+var users=[]//to maintain emails for users
 
 var db=require('DB/DbOps.js')
 db.connectToDB //connects to the database required
@@ -33,6 +33,8 @@ var userCollection=obj.userCollection
 var app=express()
 var userSocket=null
 var server=null
+server=app.listen(4000)
+userSocket=require('socket.io').listen(server)
 
 //setting the view engine, in this case embedded javascript or ejs
 app.set('view engine', 'ejs')
@@ -114,7 +116,7 @@ MongoClient.connect(url, function(err, db){
         return
     })
     //below is a key line as this ensures that the server starts only after the connection to the database is made
-    server=app.listen(4000)
+    // server=app.listen(4000)
     //configuring the socket
     var httpServer=http.createServer()
     httpServer.listen(1337)
@@ -129,7 +131,7 @@ MongoClient.connect(url, function(err, db){
 ], function(err, results){
 
     //--------------------------------------------Socket for sending data to clients--------------------------------
-    userSocket=require('socket.io').listen(server)//configuring to listen for connections into the same port of express
+    // userSocket=require('socket.io').listen(server)//configuring to listen for connections into the same port of express
     
     //--------------------------------------------Socket connection for com. between server and tailableCursor client------
 
@@ -180,6 +182,8 @@ app.get('/logout', function(req, res){
 app.post('/userHome', urlencodedParser, function (req, res){
     var email=req.body.email
 
+    users.push(email)
+
     async.series([function(callback){
 
         if(!(req.session && req.session.email)){
@@ -204,56 +208,51 @@ app.post('/userHome', urlencodedParser, function (req, res){
         }
         res.render('userHome')
 
-        userSocket.on('connection', function(client){
-            client.emit('hi', {data:'helloworld'})
-            console.log(chalk.blue('a new user got connected'))
-            var currentEmails=Object.keys(users)
-            if(currentEmails.indexOf(req.session.email)==-1){                
-                client.join(req.session.email)//here we are using rooms and the name of the room the client join is its email
-                var email=req.session.email
-                users[email]=client.id
-            }
-            else{//if the user exists override the client id so that the new client id is stored
-                client.join(req.session.email)
-                email=req.session.email
-                users[email]=client.id
-            }
-            
-        })
-
-        userSocket.on('disconnect', function(client){
-            var clientID
-            var clientEmail
-            console.log(chalk.blue('a new user got disconnected'))
-            for (var email in users){
-                clientID=users[email]
-                if(clientID==client.id){
-                    clientEmail=email
-                    delete users[email]
-                    break
-                }
-            }
-            console.log(chalk.red('a client got disconnected with email: '+clientEmail))
-        })
-        
+                
     })
     
 })
 
-app.get('/userSuccess/:characterName/:location/:relationships/:job/:assignment', function(req, res){
+app.post('/userSuccess', urlencodedParser, function(req, res){
 
     /*var email=req.params.email*/
     if(req.session && req.session.email){
             console.log(chalk.green('session exists'))
             
             var email=req.session.email
-    
+            console.log('req.body: '+JSON.stringify(req.body))
             var data={
-            characterName:req.params.characterName,
-            location:req.params.location,
-            relationships:req.params.relationships,
-            job:req.params.job,
-            assignment:req.params.assignment
+            characterName:req.body.characterName,
+            location:req.body.location,
+            relationships:req.body.relationships,
+            job:req.body.job,
+            assignment:req.body.assignment
+            }
+
+            //cleaning the data
+            if(data.location==null){
+                data.location='false'
+            }
+            else{
+                data.location='true'
+            }
+            if(data.relationships==null){
+                data.relationships='false'
+            }
+            else{
+                data.relationships='true'
+            }
+            if(data.job==null){
+                data.job='false'
+            }
+            else{
+                data.job='true'
+            }
+            if(data.assignment==null){
+                data.assignment='false'
+            }
+            else{
+                data.assignment='true'
             }
 
             db.insert.insertCharacterSubscriptions(dbInstance, email, data)
@@ -305,20 +304,42 @@ app.post('/adminSuccess', urlencodedParser, function(req, res){
     res.render('adminHome')
 })
 
+userSocket.sockets.on('connection', function(client){
+    console.log(chalk.blue('a new user got connected'))
+
+    var userEmail=users[users.length-1]
+
+    client.join(userEmail)
+
+    /*if(currentEmails.indexOf(req.session.email)==-1){                   console.log('client joins room:'+req.session.email+'with client id: '+client.id)
+        client.join(req.session.email)//here we are using rooms and the name of the room the client join is its email
+        var email=req.session.email
+        users[email]=client.id
+    }
+    else{//if the user exists override the client id so that the new client id is stored
+        console.log('on reconnection client joins room:'+req.session.email+'with client id: '+client.id)
+        client.join(req.session.email)
+        email=req.session.email
+        users[email]=client.id
+    }*/
+
+    client.on('disconnect', function(){
+        console.log(chalk.red('a client got disconnected'))
+    })
+
+})
+
 function sendLog(message, data){
     console.log('at sendLog')
-    console.log('emails now:'+Object.keys(users))
     console.log('message now:'+message)
-    console.log(JSON.stringify(users))
     if(userSocket==null){
         console.log('userSocket is null')
     }
-    for(var email in users){
-        console.log('email insie for loop:'+email)
-        if(message.indexOf(email)!=-1){
-            console.log(chalk.red('emitting data to the user:'+JSON.stringify(data)))
-            userSocket.in(email).emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
-        }
+    var i=0
+    for(i=0; i<message.length;i++){
+        console.log('emiting now to email:'+message[i])
+        userSocket.in(message[i]).emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
     }
 }
+
 
