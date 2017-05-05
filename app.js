@@ -150,7 +150,7 @@ MongoClient.connect(url, function(err, db){
             
         }], function(err, results){
             //here results[0] actually contains array of users who had subscribed to the change in the database and so all that information must be persistent and stored in the user's collection
-            db.insert.insertNotifications(results[0], data)
+            db.insert.insertNotifications(dbInstance, results[0], data)
             sendLog(results[0], data)
         })
     })
@@ -311,11 +311,27 @@ userSocket.sockets.on('connection', function(client){
 
     //during the connection of a new client we can send the data of any persistent notifications of the user to the user
 
-    
-
     var userEmail=users[users.length-1]
 
     client.join(userEmail)
+    async.series([function(callback){
+        db.read.checkUserNotifications(dbInstance, userEmail, callback)
+    }], function(err, results){
+        
+        var docs=results[0]
+
+        var document
+
+        if(docs!=null){
+            for(var i=0;i< docs.length;i++){
+                document=docs[i]
+                console.log(chalk.blue('emitting new document:'+JSON.stringify(document)))
+                userSocket.in(userEmail).emit('newLogData', {data:document})//emitting documents one by one
+            }
+        }
+    })
+    
+    
 
     client.on('disconnect', function(){
         console.log(chalk.red('a client got disconnected'))
