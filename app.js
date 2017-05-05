@@ -153,7 +153,6 @@ MongoClient.connect(url, function(err, db){
 })  
 })
 
-
 //------------------------------------------connect to database done----------------------------------------------
 
 app.get('/', function(req, res){
@@ -206,20 +205,35 @@ app.post('/userHome', urlencodedParser, function (req, res){
         res.render('userHome')
 
         userSocket.on('connection', function(client){
+            client.emit('hi', {data:'helloworld'})
+            console.log(chalk.blue('a new user got connected'))
             var currentEmails=Object.keys(users)
-            console.log('email now:'+req.session.email)
-            console.log('email inserted already: '+currentEmails)
             if(currentEmails.indexOf(req.session.email)==-1){                
+                client.join(req.session.email)//here we are using rooms and the name of the room the client join is its email
                 var email=req.session.email
                 users[email]=client.id
-                /*client.emit('hey', {data:'hey'})*/
-                console.log('user emails now:'+Object.keys(users))
+            }
+            else{//if the user exists override the client id so that the new client id is stored
+                client.join(req.session.email)
+                email=req.session.email
+                users[email]=client.id
             }
             
         })
 
         userSocket.on('disconnect', function(client){
-            console.log('a client got disconnected')
+            var clientID
+            var clientEmail
+            console.log(chalk.blue('a new user got disconnected'))
+            for (var email in users){
+                clientID=users[email]
+                if(clientID==client.id){
+                    clientEmail=email
+                    delete users[email]
+                    break
+                }
+            }
+            console.log(chalk.red('a client got disconnected with email: '+clientEmail))
         })
         
     })
@@ -243,7 +257,10 @@ app.get('/userSuccess/:characterName/:location/:relationships/:job/:assignment',
             }
 
             db.insert.insertCharacterSubscriptions(dbInstance, email, data)
-            res.render('userSuccess')
+            setTimeout(function(){
+                res.render('userHome')
+            }, 2000)
+            
     }
     else{
         res.render('/')
@@ -300,7 +317,7 @@ function sendLog(message, data){
         console.log('email insie for loop:'+email)
         if(message.indexOf(email)!=-1){
             console.log(chalk.red('emitting data to the user:'+JSON.stringify(data)))
-            userSocket.sockets.connected[users.email].emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
+            userSocket.in(email).emit('newLogData', {data:data})//users.email is a socket object corresponding to that client
         }
     }
 }
