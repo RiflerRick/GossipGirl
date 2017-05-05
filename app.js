@@ -149,6 +149,8 @@ MongoClient.connect(url, function(err, db){
             
             
         }], function(err, results){
+            //here results[0] actually contains array of users who had subscribed to the change in the database and so all that information must be persistent and stored in the user's collection
+            db.insert.insertNotifications(results[0], data)
             sendLog(results[0], data)
         })
     })
@@ -305,7 +307,11 @@ app.post('/adminSuccess', urlencodedParser, function(req, res){
 })
 
 userSocket.sockets.on('connection', function(client){
-    console.log(chalk.blue('a new user got connected'))
+    console.log(chalk.blue('a client got connected'))
+
+    //during the connection of a new client we can send the data of any persistent notifications of the user to the user
+
+    
 
     var userEmail=users[users.length-1]
 
