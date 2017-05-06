@@ -15,7 +15,60 @@ As far as scalability and flexibility goes for any database, probably the best c
 - Database: **MongoDB**
 - Pub-Sub model Library: **Socket.io**
 
-## Design and Architecture
+## Architecture
 
+![Design and architecture of GossipGirl Starstruck](https://raw.githubusercontent.com/RiflerRick/GossipGirl/master/assets/designGossipGirl.jpg)
 
+The app is built on a simple client-server model on an MVC (model view controller) design paradigm. The entry point for the application is `app.js` in the root directory. The entire controller logic is distributed across 2 files:
+
+- **`app.js`** - The entry point for express application.
+- **`DbOps.js`** - The database handling including all CRUD operations.
+
+### Database: Collections, Documents and Attributes
+
+The database consists of 2 tables:
+- **users**: For storing user data, the document structure was decided to be the following:
+```
+{
+    "email":"NULL",
+    "characters":[],
+    "notifications":[]
+}
+```
+The `characters` field would contain the data for the characters that the person has subscribed to. It is an array that would store all characters that the person had suscribed to. 
+
+The `notifications` field would contain data with respect to the notification for a character that the person recieves. It is also an array.
+
+The set of attributes for these fields would be the following:
+
+**characters:**
+-   ```
+    {
+        "characterName":"<type: string>",
+        "location":"<type: boolean>",
+        "relationships":"<type: boolean>",
+        "job":"<type: boolean>",
+        "assignment":"<type: boolean>"
+    }
+    ```
+
+`DBOps.js` is custom module written specifically for handling all database operations other than the database connection which is done on `app.js` itself. There are two objects namely `read` and `insert` that are exported outside the module using the `exports` object of nodejs. This design descision was taken to separate database related code to another module for reasons of maintainability and writing cleaner code. The basic structure of the object is as follows:
+
+```
+exports.read={
+
+    insertUser: function(<args>){
+        //function for inserting a user to the user collection
+    },
+    insertGSData: function(<args>){
+
+    },
+    insertCharacterSubscriptions: function(<args>){
+        
+    },
+    insertNotifications: function(<args>){
+
+    }
+}
+```
 
