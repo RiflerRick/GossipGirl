@@ -18,7 +18,7 @@ var bodyParser = require('body-parser')//body-parser to actually use get stuff f
 
 var users=[]//to maintain emails for users
 
-var db=require('DB/DbOps.js')
+var db=require('./DBOps')//it is required that this directory be in node modules 
 db.connectToDB //connects to the database required
 
 //---------------------------------------database config file read----------------------------
