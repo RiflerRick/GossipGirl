@@ -44,13 +44,28 @@ The set of attributes for these fields would be the following:
 **characters:**
 -   ```
     {
-        "characterName":"<type: string>",
-        "location":"<type: boolean>",
-        "relationships":"<type: boolean>",
-        "job":"<type: boolean>",
-        "assignment":"<type: boolean>"
+        "characterName":<type: string>,
+        "location":<type: boolean>,
+        "relationships":<type: boolean>,
+        "job":<type: boolean>,
+        "assignment":<type: boolean>
     }
     ```
+    For the user all we need to store is whether the user has subscribed to certain aspects of the character or not for example location, relationships and so on. Hence they are simply boolean values. 
+
+**notifications:**
+-   ```
+    {
+        "characterName":<type: string>,
+        "location":<type: string>,
+        "relationships":<type: string>,
+        "job":<type: string>,
+        "assignment":<type: string>
+    }
+    ```
+    For the user notifications we need to store all the information about the character that the user has subscribed for and hence all the data that had been updated or logged by the system administrator will be stored here for persistence of notifications. So once the user has registered to the application he/she will never miss a notification whether he/she is offline or online.
+
+- **GSCharacterLog:** As far as the character log goes, the system administrator will be able to update 
 
 `DBOps.js` is custom module written specifically for handling all database operations other than the database connection which is done on `app.js` itself. There are two objects namely `read` and `insert` that are exported outside the module using the `exports` object of nodejs. This design descision was taken to separate database related code to another module for reasons of maintainability and writing cleaner code. The basic structure of the object is as follows:
 
