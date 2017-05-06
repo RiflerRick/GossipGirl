@@ -260,7 +260,7 @@ app.post('/userSuccess', urlencodedParser, function(req, res){
             db.insert.insertCharacterSubscriptions(dbInstance, email, data)
             setTimeout(function(){
                 res.render('userHome')
-            }, 2000)
+            }, 1000)
             
     }
     else{

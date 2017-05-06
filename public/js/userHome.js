@@ -8,7 +8,7 @@ $(document).ready(function(){
     $('#go').click(function(){
         $('form').submit()
 
-        Materialize.toast('Successfully updated!', 4000)//just a toast informing the user
+        Materialize.toast('Successfully updated!', 1000)//just a toast informing the user
     })
 
     //socket configuration
