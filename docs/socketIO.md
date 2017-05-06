@@ -4,3 +4,4 @@ Socket.IO is a very popular library used especially for implementing pub-sub mod
 
 ### Lets dive in!!!
 
+For the purposes of this web application, I required two socket connections one between the tailable cursor
