@@ -120,12 +120,81 @@ Express was used as the framework for designing the web application. The directo
 
 `package.json`- For any express or more generally node application all the dependencies of the application and other metadata for the application are stored in the file `package.json`. When cloning a root directory of any node application and running `npm install`, we can download all the modules or packages used for the application into node_modules. 
 
-### Templating Engine: EJS(Embedded Javascript)
-
-A simple templating engine popularly with express that can help with variable interpolation at various places inside the web application
-
 ### Triggers in MongoDB
 
 For the purposes of the application a trigger was necessary in the database that would trigger an event telling the server or any other event listener that a new document had been inserted. This was achieved in MongoDB using `capped collections` and `tailable cursors`. 
 
-A capped collection in MongoDB as the name suggests in simpy a collection
+A capped collection in MongoDB as the name suggests is simply a collection that has a higher limit in the storage of documents. 
+
+A tailable cursor is simply a type of cursor that iterates though all documents returned by a query until it finds the last document. The special thing about a tailable cursor is that it can be set to listen for new documents being inserted into the collection. There are options that can be set in the function that returns the cursor in order to do the same.
+
+Whenever a new document would arrive the tailable cursor would fire an event and any process listening for that event would be able to hear it and take necessary action.
+
+### Socket.io integration
+
+Socket.io is a popular library that is used for the purpose of real time applications especially in chat servers. It uses the technology of **web sockets** in modern browsers and also fall back to **long-polling** in case the browser does not support web sockets. 
+
+This project required a real time service for showing notifications to the user in real time for changes in a database. 
+
+Two socket connection were used to achieve this:
+
+- A connection between the `server` and the application listening to the `tailable cursor`.
+
+- A connection between the `server` and the `clients` of the application. 
+
+Whenever the tailable cursor fired an event suggesting a new document had arrived the socket would send this new document data to the server, the server would run a query in the mongoDB database checking which users had subscribed to the data in this new document.
+
+The application for opening the tailable cursor as a separate process is `openTailableCursor.js`.
+
+### Templating Engine: EJS(Embedded Javascript)
+
+A simple templating engine popularly with express that can help with variable interpolation at various places inside the web application
+
+### FrontEnd Library: Materialize
+
+Materialize is a material design library(mdl) used for creating `material` like design and integrating with html5.
+
+### Difficulties faced:
+
+- **MongoDB**: This was my first experience with regard to designing an application with the database as MongoDB and nosql in general. I had to refer to ample number of documentations and other resources to figure out how to effectively and efficiently communicate with the database. 
+- **Persistence of connection with MongoDB**: The NodeJS driver for mongoDB has callback functions for connecting to the database which suggested that I could not return any values from the function. However this would also mean that in order to maintain a persistent connection with the database I would have to do all CRUD opearations inside this connect function which was simply impossible with my application needs. Therefore I designated a separate global variable as the database instance to maintain a persistent connection with the database for subsequent CRUD operations after connecting to the database.
+- **Using Socket.io and sending message to specific clients**: This assignment was also my first attempt at using socket.io for implementing a pub-sub model. Most online resources including the documentation of socket.io suggested how to send messages to all clients connected to the network. However my requirement was essentially to tag specific users so that I can recognise and send data to specific users of my choice since all the users would essentially be listening to the same `event` for messages. To resolve this I used `rooms` of socket.io. I assigned each user to a specific `room` given by their email addresses and during the sending of messages now it would be easy to send the message given the specific room that the user belonged.
+- **Serializing async code**: In case of asynchronous programming in general serializing async code can be a challenge and I serialized my code using a popular nodejs library called `async`. It has many inbuilt functions that can tackle this very problem of writing serialized versions of code in an async environment.
+
+### Application Usage from the Client side:
+
+Users can log in into their accounts subscribe to characters of Gossip Girl of their choice. As and when the administrator logs changes to the database, the user would be notified on his/her home page about the change in real time. The notification to the user would remain persistent and the user would be able to see them even at the next login.
+
+### Setting up the application:
+
+#### Requirements:
+
+- **NodeJS**: Nodejs must be installed in the system. click [here](https://nodejs.org/en/download/) to download.
+
+- **MongoDB**: The application uses MongoDB as its database and it must be preinstalled in the system. click [here](https://www.mongodb.com/download-center?jmp=homepage#community) to download.
+
+#### Steps to run the application:
+
+- Start the mongoDB server after installing it. Click [here](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-windows/#install-the-mongodb-service) to see how to start the mongoDB server.
+
+- Run `npm install`: In order to install all the dependencies of the application you would have to run `npm install` on terminal (for Linux users) or command prompt (for Windows users) in the root directory of the application. This may take some time. All modules required for the application will be downloaded and placed in the `node_modules` directory.
+
+- Run `app.js`: Go to the root directory of the GossipGirl Starstruck and type on your terminal (for Linux users) or command prompt (for Windows users) `node app.js`.
+
+- Run `openTailableCursor.js`: Open a new terminal (for Linux users) or command prompt (for Windows users) and type `node openTailableCursor.js`.
+
+- The server should be running on port `localhost:4000`. Go to the browser and open `http://localhost:4000`. 
+
+### References:
+
+- **Capped collection and Tailable cursors**: Obtained from [http://tugdualgrall.blogspot.in/2015/01/how-to-create-pubsub-application-with.html](http://tugdualgrall.blogspot.in/2015/01/how-to-create-pubsub-application-with.html).
+
+- **MongoDB integration**: [https://www.youtube.com/watch?v=W-WihPoEbR4](https://www.youtube.com/watch?v=W-WihPoEbR4) and the mongoDB official documentation, [https://docs.mongodb.com/manual/crud/](https://docs.mongodb.com/manual/crud/).
+
+- **Socket.io**: Socket.io official documentation server side [https://socket.io/docs/server-api/](https://socket.io/docs/server-api/) and client side [https://socket.io/docs/client-api/](https://socket.io/docs/client-api/).
+
+- **Express and nodeJS**: [https://www.youtube.com/watch?v=3S9ELJS1aU8](https://www.youtube.com/watch?v=3S9ELJS1aU8) and [https://www.youtube.com/watch?v=ZVXQVJxD4c0](https://www.youtube.com/watch?v=ZVXQVJxD4c0) as well as official documentation on these [https://nodejs.org/dist/latest-v7.x/docs/api/](https://nodejs.org/dist/latest-v7.x/docs/api/).
+
+- **NodeJS async library**: [http://caolan.github.io/async/](http://caolan.github.io/async/) especially for serializing asynchronous code.
+
+- **Materialize for front end design**: [http://materializecss.com/getting-started.html](http://materializecss.com/getting-started.html)
