@@ -1,5 +1,5 @@
 # GossipGirl
-#### Startstruck
+#### Starstruck
 
 
 ## Introduction
