@@ -26,7 +26,7 @@ The app is built on a simple client-server model on an MVC (model view controlle
 
 ### Database: Collections, Documents and Attributes
 
-The database consists of 2 tables:
+The database consists of 2 collections:
 - **users**: For storing user data, the document structure was decided to be the following:
 ```
 {
@@ -65,25 +65,67 @@ The set of attributes for these fields would be the following:
     ```
     For the user notifications we need to store all the information about the character that the user has subscribed for and hence all the data that had been updated or logged by the system administrator will be stored here for persistence of notifications. So once the user has registered to the application he/she will never miss a notification whether he/she is offline or online.
 
-- **GSCharacterLog:** As far as the character log goes, the system administrator will be able to update 
-
-`DBOps.js` is custom module written specifically for handling all database operations other than the database connection which is done on `app.js` itself. There are two objects namely `read` and `insert` that are exported outside the module using the `exports` object of nodejs. This design descision was taken to separate database related code to another module for reasons of maintainability and writing cleaner code. The basic structure of the object is as follows:
+- **GSCharacterLog:** As far as the character log goes, the system administrator will be able to update changes to the database in this collection. The set of attributes for this collection is as follows:
 
 ```
-exports.read={
+{
+    "characterName":<type: string>,
+    "location":<type: string>,
+    "relationships":<type: string>,
+    "job":<type: string>,
+    "assignment":<type: string>
+}
+```
+### Database Integration
+
+`DBOps.js` is a custom module written specifically for handling all database operations other than the database connection which is done on `app.js` itself. There are two objects namely `read` and `insert` that are exported outside the module using the `exports` object of nodejs. This design descision was taken to separate database related code to another module for reasons of maintainability and writing cleaner code. The basic structure of the object is as follows:
+
+```
+exports.insert={
 
     insertUser: function(<args>){
         //function for inserting a user to the user collection
     },
     insertGSData: function(<args>){
-
+        //function for inserting logs for gossip girl character status(handled by the sysadmin) 
     },
     insertCharacterSubscriptions: function(<args>){
-        
+        //function for inserting character subscriptions for users
     },
     insertNotifications: function(<args>){
-
+        //function for inserting notification data in the users collection
+    }
+}
+exports.read={
+    userExists: function(<args>){
+        //function to check whether the user exists
+    },
+    checkUserSubscription: function(<args>){
+        //function to check which are the characters and the character data that a particular user has subscribed to.
+    },
+    checkUserNotifications: function(<args>){
+        //function to read the notifications of the user.
     }
 }
 ```
+The database was integrated using a nodejs module called `mongodb`. This module provides us with callback functions for easily connecting with the mongoDB database and communicating with it on the default port. All insertions, updations and reading of the collections was done using the mongodb module methods.
 
+### Web Framework: Express
+
+Express was used as the framework for designing the web application. The directory structure used is the deafult directory structure suggested and used by Express. The root directory has three main directories namely **public, views and node_modules**. 
+
+-   public: It contains all static files including the css and js files of the entire application.
+-   views: It contains all the views or templates to render to the browser.
+-   node_modules: It contains all the node modules used in the application.
+
+`package.json`- For any express or more generally node application all the dependencies of the application and other metadata for the application are stored in the file `package.json`. When cloning a root directory of any node application and running `npm install`, we can download all the modules or packages used for the application into node_modules. 
+
+### Templating Engine: EJS(Embedded Javascript)
+
+A simple templating engine popularly with express that can help with variable interpolation at various places inside the web application
+
+### Triggers in MongoDB
+
+For the purposes of the application a trigger was necessary in the database that would trigger an event telling the server or any other event listener that a new document had been inserted. This was achieved in MongoDB using `capped collections` and `tailable cursors`. 
+
+A capped collection in MongoDB as the name suggests in simpy a collection
