@@ -3,7 +3,7 @@
 
 
 ## Introduction
-GossipGirl Startstuck is an application where you can register as a user and subscribe to your favourite characters from GossipGirl and you will be notified of changes in your character status in real time. An administrator of the database can make changes to the database and subsribed users can see those changes in real time as long as they are logged. Even if they are not logged in the data remains persistent will be stored for that user and the next time he logs in the data will be shown to the user.
+GossipGirl Starstruck is an application where you can register as a user and subscribe to your favourite characters from GossipGirl and you will be notified of changes in your character status in real time. An administrator of the database can make changes to the database and subsribed users can see those changes in real time as long as they are logged. Even if they are not logged in the data remains persistent will be stored for that user and the next time he logs in the data will be shown to the user.
 
 ## Choice of Language and Framework
 
